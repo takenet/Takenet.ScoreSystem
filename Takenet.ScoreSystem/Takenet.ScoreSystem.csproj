@@ -63,6 +63,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Base\Repository\AzureScoreSystemRepository.cs" />
     <Compile Include="Base\ScoreSystemAzure.cs" />
     <Compile Include="Core\IScoreSystem.cs" />
     <Compile Include="Core\IScoreSystemRepository.cs" />
@@ -79,9 +80,7 @@
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Base\Repository\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
