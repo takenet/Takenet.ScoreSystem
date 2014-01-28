@@ -16,9 +16,9 @@ namespace Takenet.ScoreSystem.Base
     {
         private const int MAX_TRANSACTIONS = 15;
         private CloudTable _table;
-        private Dictionary<string, decimal> _checkPatterns;
+        private Dictionary<string, double> _checkPatterns;
 
-        public Dictionary<string, decimal> CheckPatterns
+        public Dictionary<string, double> CheckPatterns
         {
             get
             {
@@ -28,7 +28,13 @@ namespace Takenet.ScoreSystem.Base
                 }
                 return _checkPatterns;
             }
+            set
+            {
+                _checkPatterns = value;
+            }
         }
+
+
 
         public ScoreSystemAzure(string azureConnectionString, string colletion)
         {
@@ -39,11 +45,12 @@ namespace Takenet.ScoreSystem.Base
         }
 
 
-        public async Task<Pattern> IncludeOrChangePattern(string pattern, decimal value)
+        public async Task<Pattern> IncludeOrChangePattern(string pattern, double value)
         {
             var resultPattern = new Pattern(pattern, value);
             var insertPattern = TableOperation.InsertOrReplace(new Store.Pattern(resultPattern));
             var tableResult = await _table.ExecuteAsync(insertPattern);
+            _checkPatterns = null;
             return resultPattern;
         }
 
@@ -56,12 +63,13 @@ namespace Takenet.ScoreSystem.Base
                 var operation = TableOperation.Delete((Store.Pattern)tableResult.Result);
                 var result = await _table.ExecuteAsync(operation);
             }
+            _checkPatterns = null;
         }
 
         public async Task<Transaction> Feedback(string clientId, string transactionId, TransactionStatus transactionStatus)
         {
-            TableQuery<Store.Transaction> query = new TableQuery<Store.Transaction>().Where(t => t.PartitionKey == clientId && t.TransactionId == transactionId).AsTableQuery();
-            foreach (Store.Transaction transaction in _table.ExecuteQuery(query))
+            var transaction = GetTransactionById(clientId, transactionId);
+            if (transaction != null)
             {
                 transaction.TransactionStatus = transactionStatus;
                 var operation = TableOperation.InsertOrReplace(transaction);
@@ -71,19 +79,27 @@ namespace Takenet.ScoreSystem.Base
             return null;
         }
 
-        public async Task<decimal> CheckScore(string clientId, string transactionId, string signature)
+
+        public async Task<double> CheckScore(string clientId, string transactionId, string signature, DateTime transactionDate)
         {
             var pattern = new StringBuilder();
-            var transaction = new Transaction(clientId, transactionId, signature);
-
-            var insertOperation = TableOperation.InsertOrReplace((Store.Transaction)transaction);
+            Store.Transaction transaction = GetTransactionById(clientId, transactionId);
+            if (transaction == null)
+            {
+                transaction = new Transaction(clientId, transactionId, signature,transactionDate);
+            }
+            else
+            {
+                transaction.Signature = signature;
+            }
+            var insertOperation = TableOperation.InsertOrReplace(transaction);
             var result = await _table.ExecuteAsync(insertOperation);
-            var clientTransactions = GetClientTransactions(clientId);
-            decimal resul = 0;            
+            var clientTransactions = GetClientTransactions(clientId,transactionDate);
+            double resul = 0;            
             foreach (Transaction clientTransaction in clientTransactions)
             {
                 pattern.Insert(0,clientTransaction.Signature);
-                decimal value;
+                double value;
                 CheckPatterns.TryGetValue(pattern.ToString(), out value);
                 resul += value;
             }
@@ -91,17 +107,38 @@ namespace Takenet.ScoreSystem.Base
         }
 
 
-        private IEnumerable<Transaction> GetClientTransactions(string clientId)
+        private IEnumerable<Store.Transaction> GetClientTransactions(string clientId, DateTime maxvalue)
         {
-            var query = new TableQuery<Store.Transaction>().Where(c => c.PartitionKey == clientId).Take(MAX_TRANSACTIONS).AsTableQuery();
-            return _table.ExecuteQuery(query).Select(t => (Transaction) t);
+            
+            var query =
+                new TableQuery<Store.Transaction>()
+                .Where(
+                TableQuery.CombineFilters(
+                TableQuery.GenerateFilterCondition("PartitionKey",QueryComparisons.Equal, clientId),
+                TableOperators.And,
+                TableQuery.GenerateFilterConditionForDate("TransactionDate",QueryComparisons.LessThanOrEqual, maxvalue))
+                ).Take(MAX_TRANSACTIONS);
+            return _table.ExecuteQuery(query).Select(t =>  t);
         }
 
-        private Dictionary<string, decimal> FillPatterns()
+        private Dictionary<string, double> FillPatterns()
         {
-            var query = new TableQuery<Store.Pattern>().Where(p => p.PartitionKey == "pattern").AsTableQuery();
+            var query = new TableQuery<Store.Pattern>().Where(TableQuery.GenerateFilterCondition("PartitionKey",
+                    QueryComparisons.Equal, "pattern")).AsTableQuery();
             return _table.ExecuteQuery(query).ToDictionary(t => t.Signature,t => t.Value);
         }
+
+        private Store.Transaction GetTransactionById(string clientId, string transactionId)
+        {
+            TableQuery<Store.Transaction> query =
+                new TableQuery<Store.Transaction>().Where(
+                    TableQuery.CombineFilters(
+                        TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, clientId),
+                        TableOperators.And,
+                        TableQuery.GenerateFilterCondition("TransactionId", QueryComparisons.Equal, transactionId)));
+            return _table.ExecuteQuery(query).FirstOrDefault();
+        }
+
 
 
     }

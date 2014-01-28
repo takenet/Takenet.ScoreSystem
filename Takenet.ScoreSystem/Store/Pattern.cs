@@ -21,7 +21,7 @@ namespace Takenet.ScoreSystem.Store
         }
 
         public string Signature { get { return this.RowKey; }  }
-        public decimal Value { get; set; }
+        public double Value { get; set; }
 
 
         public static implicit operator Core.Pattern(Pattern pattern)

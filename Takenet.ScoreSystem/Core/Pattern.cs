@@ -7,12 +7,12 @@ namespace Takenet.ScoreSystem.Core
 {
     public class Pattern
     {
-        public Pattern(string signature, decimal value)
+        public Pattern(string signature, double value)
         {
             Signature = signature;
             Value = value;
         }
         public string Signature { get; set; }
-        public decimal Value { get; set; }
+        public double Value { get; set; }
     }
 }
