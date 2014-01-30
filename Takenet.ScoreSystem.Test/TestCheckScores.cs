@@ -46,9 +46,9 @@ namespace Takenet.ScoreSystem.Test
 
         private static void SetupPatterns(ScoreSystemBase scoreSystem)
         {
-            scoreSystem.IncludeOrChangePattern("AAA", 10).Wait();
-            scoreSystem.IncludeOrChangePattern("AABAAA", 5).Wait();
-            scoreSystem.IncludeOrChangePattern("AAAAAA", 10).Wait();
+            scoreSystem.IncludeOrChangePattern("AAA", 10, 1).Wait();
+            scoreSystem.IncludeOrChangePattern("AABAAA", 5, 2).Wait();
+            scoreSystem.IncludeOrChangePattern("AAAAAA", 10, 2).Wait();
         }
 
 

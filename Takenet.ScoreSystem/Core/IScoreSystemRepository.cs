@@ -9,11 +9,14 @@ namespace Takenet.ScoreSystem.Core
     public interface IScoreSystemRepository
     {
         Task RemovePattern(string pattern);
-        Dictionary<string, double> FillPatterns();
 
-        Task IncudeOrChangePattern(Pattern resultPattern);
+        Dictionary<byte, Dictionary<string,double>> FillPatterns();
 
-        Task IncudeOrChangeTransaction(Transaction transaction);
+        Task<Pattern> GetCurrentPattern(string pattern);
+
+        Task IncludeOrChangePattern(Pattern resultPattern);
+
+        Task IncludeOrChangeTransaction(Transaction transaction);
 
         IEnumerable<Transaction> GetClientTransactions(string clientId, DateTime transactionDate, int maxTransactions);
 

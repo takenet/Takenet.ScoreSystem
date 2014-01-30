@@ -18,15 +18,17 @@ namespace Takenet.ScoreSystem.Store
         public Pattern(Core.Pattern pattern) : base("pattern", pattern.Signature)
         {
             Value = pattern.Value;
+            HistorySize = pattern.HistorySize;
         }
 
         public string Signature { get { return this.RowKey; }  }
         public double Value { get; set; }
+        public int HistorySize { get; set; }
 
 
         public static implicit operator Core.Pattern(Pattern pattern)
         {
-            return new Core.Pattern(pattern.Signature, pattern.Value);
+            return new Core.Pattern(pattern.Signature, pattern.Value, (byte)pattern.HistorySize);
         }
         public static implicit operator Pattern(Core.Pattern pattern)
         {

@@ -9,6 +9,7 @@ using Microsoft.WindowsAzure.Storage.Table.DataServices;
 using Microsoft.WindowsAzure.Storage.Table.Queryable;
 using Takenet.ScoreSystem.Core;
 using Takenet.ScoreSystem.Base.Repository;
+using Takenet.ScoreSystem.Core.Exceptions;
 
 namespace Takenet.ScoreSystem.Base
 {
@@ -16,10 +17,10 @@ namespace Takenet.ScoreSystem.Base
     public class ScoreSystemBase : IScoreSystem
     {
         private const int MAX_TRANSACTIONS = 15;
-        private IScoreSystemRepository _scoreSystemRepository;
-        private Dictionary<string, double> _checkPatterns;
+        private readonly IScoreSystemRepository _scoreSystemRepository;
+        private Dictionary<byte, Dictionary<string,double>> _checkPatterns;
 
-        public Dictionary<string, double> CheckPatterns
+        public Dictionary<byte, Dictionary<string, double>> CheckPatterns
         {
             get
             {
@@ -35,10 +36,10 @@ namespace Takenet.ScoreSystem.Base
             _scoreSystemRepository = scoreSystemRepository;
         }
         
-        public async Task<Pattern> IncludeOrChangePattern(string pattern, double value)
+        public async Task<Pattern> IncludeOrChangePattern(string pattern, double value, byte historySize)
         {
-            var resultPattern = new Pattern(pattern, value);
-            await _scoreSystemRepository.IncudeOrChangePattern(resultPattern);
+            var resultPattern = new Pattern(pattern, value, historySize);
+            await _scoreSystemRepository.IncludeOrChangePattern(resultPattern);
             _checkPatterns = null;
             return resultPattern;
         }
@@ -47,7 +48,7 @@ namespace Takenet.ScoreSystem.Base
 
         public async Task RemovePattern(string pattern)
         {
-            _scoreSystemRepository.RemovePattern(pattern);
+            await _scoreSystemRepository.RemovePattern(pattern);
             _checkPatterns = null;
         }
 
@@ -57,7 +58,7 @@ namespace Takenet.ScoreSystem.Base
             if (transaction != null)
             {
                 transaction.TransactionStatus = transactionStatus;
-                await _scoreSystemRepository.IncudeOrChangeTransaction(transaction);
+                await _scoreSystemRepository.IncludeOrChangeTransaction(transaction);
                 return transaction;
             }
             return null;
@@ -70,17 +71,22 @@ namespace Takenet.ScoreSystem.Base
         {
             var pattern = new StringBuilder();
             var transaction = new Transaction(clientId, transactionId, signature,transactionDate);
-            _scoreSystemRepository.IncudeOrChangeTransaction(transaction);
-            var clientTransactions = _scoreSystemRepository.GetClientTransactions(clientId,transactionDate,MAX_TRANSACTIONS);
-            double resul = 0;            
-            foreach (Transaction clientTransaction in clientTransactions)
+            await _scoreSystemRepository.IncludeOrChangeTransaction(transaction);
+            var clientTransactions = _scoreSystemRepository.GetClientTransactions(clientId,transactionDate,MAX_TRANSACTIONS).ToList();
+            double result = 0;
+            for (byte index = 0; index < clientTransactions.Count; index++)
             {
-                pattern.Insert(0,clientTransaction.Signature);
-                double value;
-                CheckPatterns.TryGetValue(pattern.ToString(), out value);
-                resul += value;
+                var clientTransaction = clientTransactions[index];
+                pattern.Insert(0, clientTransaction.Signature);
+                Dictionary<string, double> patterns;
+                if (CheckPatterns.TryGetValue((byte) (index + 1), out patterns))
+                {
+                    double value;
+                    patterns.TryGetValue(pattern.ToString(),out value);
+                    result += value;
+                }
             }
-            return resul;
+            return result;
         }
 
 

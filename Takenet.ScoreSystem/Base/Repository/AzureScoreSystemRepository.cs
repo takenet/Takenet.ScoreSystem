@@ -11,7 +11,7 @@ namespace Takenet.ScoreSystem.Base.Repository
 {
     public class AzureScoreSystemRepository : IScoreSystemRepository
     {
-        private CloudTable _table;
+        private readonly CloudTable _table;
 
         public AzureScoreSystemRepository(string azureConnectionString, string colletion)
         {
@@ -33,19 +33,29 @@ namespace Takenet.ScoreSystem.Base.Repository
             }
         }
 
-        public Dictionary<string, double> FillPatterns()
+        public Dictionary<byte, Dictionary<string,double>> FillPatterns()
         {
             var query = new TableQuery<Store.Pattern>().Where(TableQuery.GenerateFilterCondition("PartitionKey",
                     QueryComparisons.Equal, "pattern"));
-            return _table.ExecuteQuery(query).ToDictionary(t => t.Signature, t => t.Value);
+            return _table.ExecuteQuery(query)
+                .GroupBy(x => x.HistorySize)
+                .ToDictionary(g => (byte)g.Key, g => g
+                    .ToDictionary(t => t.Signature, t => t.Value));
         }
 
-        public async Task IncudeOrChangePattern(Pattern resultPattern)
+        public async Task<Pattern> GetCurrentPattern(string pattern)
+        {
+            var retrievePattern = TableOperation.Retrieve<Store.Pattern>("pattern", pattern);
+            var tableResult = await _table.ExecuteAsync(retrievePattern);
+            return tableResult.Result as Pattern;
+        }
+
+        public async Task IncludeOrChangePattern(Pattern resultPattern)
         {
             var insertPattern = TableOperation.InsertOrReplace(new Store.Pattern(resultPattern));
             var tableResult = await _table.ExecuteAsync(insertPattern);
         }
-        public async Task IncudeOrChangeTransaction(Transaction transaction)
+        public async Task IncludeOrChangeTransaction(Transaction transaction)
         {
             var operation = TableOperation.InsertOrReplace((Store.Transaction)transaction);
             await _table.ExecuteAsync(operation);

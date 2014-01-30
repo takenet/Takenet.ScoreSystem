@@ -59,12 +59,13 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Base\Repository\AzureScoreSystemRepository.cs" />
-    <Compile Include="Base\ScoreSystemAzure.cs" />
+    <Compile Include="Base\ScoreSystemBase.cs" />
+    <Compile Include="Core\Exceptions\AlreadyRegisteredPatternException.cs" />
+    <Compile Include="Core\Exceptions\InvalidPatternException.cs" />
     <Compile Include="Core\IScoreSystem.cs" />
     <Compile Include="Core\IScoreSystemRepository.cs" />
     <Compile Include="Core\Pattern.cs" />
