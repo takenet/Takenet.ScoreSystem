@@ -13,6 +13,7 @@ namespace Takenet.ScoreSystem.Core
         /// </summary>
         /// <param name="pattern">The pattern.</param>
         /// <param name="value">The value.</param>
+        /// <param name="historySize">Size of the history.</param>
         /// <returns></returns>
         Task<Pattern> IncludeOrChangePattern(string pattern, double value, byte historySize);
         /// <summary>
@@ -41,12 +42,4 @@ namespace Takenet.ScoreSystem.Core
         Task<double> CheckScore(string clientId, string transactionId, string signature, DateTime transactionDate);
     }
 
-    public enum ConflictOption
-    {
-        ThrowException,
-        Replace,
-        KeepHighest,
-        Sum,
-        KeepCurrent
-    }
 }

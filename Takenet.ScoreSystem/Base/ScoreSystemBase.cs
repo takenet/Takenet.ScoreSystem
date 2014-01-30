@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
@@ -69,7 +70,7 @@ namespace Takenet.ScoreSystem.Base
 
         public async Task<double> CheckScore(string clientId, string transactionId, string signature, DateTime transactionDate)
         {
-            var pattern = new StringBuilder();
+            var currentPattern = new StringBuilder();
             var transaction = new Transaction(clientId, transactionId, signature,transactionDate);
             await _scoreSystemRepository.IncludeOrChangeTransaction(transaction);
             var clientTransactions = _scoreSystemRepository.GetClientTransactions(clientId,transactionDate,MAX_TRANSACTIONS).ToList();
@@ -77,13 +78,13 @@ namespace Takenet.ScoreSystem.Base
             for (byte index = 0; index < clientTransactions.Count; index++)
             {
                 var clientTransaction = clientTransactions[index];
-                pattern.Insert(0, clientTransaction.Signature);
+                currentPattern.Insert(0, clientTransaction.Signature);
                 Dictionary<string, double> patterns;
                 if (CheckPatterns.TryGetValue((byte) (index + 1), out patterns))
                 {
-                    double value;
-                    patterns.TryGetValue(pattern.ToString(),out value);
-                    result += value;
+                    result += patterns
+                            .Where(comparePattern => Regex.IsMatch(currentPattern.ToString(), comparePattern.Key))
+                            .Sum(comparePattern => comparePattern.Value);
                 }
             }
             return result;
