@@ -45,8 +45,6 @@ namespace Takenet.ScoreSystem.Base
             return resultPattern;
         }
 
-        
-
         public async Task RemovePattern(string pattern)
         {
             await _scoreSystemRepository.RemovePattern(pattern);
@@ -65,17 +63,18 @@ namespace Takenet.ScoreSystem.Base
             return null;
         }
 
-        
-
-
         public async Task<double> CheckScore(string clientId, string transactionId, string signature, DateTime transactionDate)
         {
             var currentPattern = new StringBuilder();
+
             var transaction = new Transaction(clientId, transactionId, signature,transactionDate);
             await _scoreSystemRepository.IncludeOrChangeTransaction(transaction);
-            var clientTransactions = _scoreSystemRepository.GetClientTransactions(clientId,transactionDate,MAX_TRANSACTIONS).ToList();
+
+            var clientTransactions = _scoreSystemRepository.GetClientTransactions(clientId, transactionDate, MAX_TRANSACTIONS).ToList();
+            var maxPatternHistorySize = CheckPatterns.Keys.Max();
+
             double result = 0;
-            for (byte index = 0; index < clientTransactions.Count; index++)
+            for (byte index = 0; index < clientTransactions.Count && index < maxPatternHistorySize; index++)
             {
                 var clientTransaction = clientTransactions[index];
                 currentPattern.Insert(0, clientTransaction.Signature);
@@ -87,6 +86,7 @@ namespace Takenet.ScoreSystem.Base
                             .Sum(comparePattern => comparePattern.Value);
                 }
             }
+
             return result;
         }
 
