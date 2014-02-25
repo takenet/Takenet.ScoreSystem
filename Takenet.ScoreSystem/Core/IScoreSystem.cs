@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Takenet.ScoreSystem.Base;
 
 namespace Takenet.ScoreSystem.Core
 {
@@ -15,7 +16,19 @@ namespace Takenet.ScoreSystem.Core
         /// <param name="value">The value.</param>
         /// <param name="historySize">Size of the history.</param>
         /// <returns></returns>
+        [Obsolete("You should use min history size and max history size now")]
         Task<Pattern> IncludeOrChangePattern(string pattern, double value, byte historySize);
+
+        /// <summary>
+        /// Includes a new pattern or change values to a existent one
+        /// </summary>
+        /// <param name="pattern">The pattern.</param>
+        /// <param name="value">The value.</param>
+        /// <param name="minHistorySize">Min value for the history size</param>
+        /// <param name="maxHistorySize">Max value for the history size</param>
+        /// <returns></returns>
+        Task<Pattern> IncludeOrChangePattern(string pattern, double value, byte minHistorySize, byte maxHistorySize);
+
         /// <summary>
         /// Removes the pattern.
         /// </summary>
@@ -39,7 +52,16 @@ namespace Takenet.ScoreSystem.Core
         /// <param name="signature">The transaction signature.</param>
         /// <param name="transactionDate">The transaction date.</param>
         /// <returns></returns>
-        Task<double> CheckScore(string clientId, string transactionId, string signature, DateTime transactionDate);
+        Task<ScoreResult> CheckScore(string clientId, string transactionId, string signature, DateTime transactionDate);
+
+        /// <summary>
+        /// Includes the clearing transaction.
+        /// </summary>
+        /// <param name="clientId">The client unique identifier.</param>
+        /// <param name="transactionId"></param>
+        /// <param name="transactionDate">The transaction date.</param>
+        /// <returns></returns>
+        Task IncludeClearingTransaction(string clientId, string transactionId, DateTime transactionDate);
     }
 
 }

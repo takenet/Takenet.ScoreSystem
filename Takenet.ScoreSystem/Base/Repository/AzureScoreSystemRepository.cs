@@ -33,14 +33,22 @@ namespace Takenet.ScoreSystem.Base.Repository
             }
         }
 
-        public Dictionary<byte, Dictionary<string,double>> FillPatterns()
+        public Dictionary<byte, Dictionary<string,double>> FillPatterns(out int size)
         {
             var query = new TableQuery<Store.Pattern>().Where(TableQuery.GenerateFilterCondition("PartitionKey",
                     QueryComparisons.Equal, "pattern"));
-            return _table.ExecuteQuery(query)
-                .GroupBy(x => x.HistorySize)
-                .ToDictionary(g => (byte)g.Key, g => g
-                    .ToDictionary(t => t.Signature, t => t.Value));
+            //Getting max value of the patterns
+            var listPatterns = _table.ExecuteQuery(query).ToList();
+            size = listPatterns.Select(x => x.MaxHistorySize).Max();
+            
+            var result = new Dictionary<byte, Dictionary<string, double>>();
+            for (byte i = 1; i <= size; i++)
+            {
+                result[i] =
+                    listPatterns.Where(x => x.MaxHistorySize >= i && x.MinHistorySize <= i)
+                        .ToDictionary(t => t.Signature, t => t.Value);
+            }
+            return result;
         }
 
         public async Task<Pattern> GetCurrentPattern(string pattern)
@@ -58,7 +66,7 @@ namespace Takenet.ScoreSystem.Base.Repository
         public async Task IncludeOrChangeTransaction(Transaction transaction)
         {
             var operation = TableOperation.InsertOrReplace((Store.Transaction)transaction);
-            await _table.ExecuteAsync(operation);
+            var tableresult = await _table.ExecuteAsync(operation);
         }
 
 

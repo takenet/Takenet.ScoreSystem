@@ -62,7 +62,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\PatternMatch.cs" />
     <Compile Include="Base\Repository\AzureScoreSystemRepository.cs" />
+    <Compile Include="Core\ScoreResult.cs" />
     <Compile Include="Base\ScoreSystemBase.cs" />
     <Compile Include="Core\Exceptions\AlreadyRegisteredPatternException.cs" />
     <Compile Include="Core\Exceptions\InvalidPatternException.cs" />

@@ -10,7 +10,7 @@ namespace Takenet.ScoreSystem.Core
     {
         Task RemovePattern(string pattern);
 
-        Dictionary<byte, Dictionary<string,double>> FillPatterns();
+        Dictionary<byte, Dictionary<string,double>> FillPatterns(out int maxTransactionHistory);
 
         Task<Pattern> GetCurrentPattern(string pattern);
 
