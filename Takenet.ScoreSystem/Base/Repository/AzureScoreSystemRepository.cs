@@ -21,7 +21,6 @@ namespace Takenet.ScoreSystem.Base.Repository
             _table.CreateIfNotExists();
         }
 
-
         public async Task RemovePattern(string pattern)
         {
             var retrievePattern = TableOperation.Retrieve<Store.Pattern>("pattern", pattern);
@@ -33,14 +32,14 @@ namespace Takenet.ScoreSystem.Base.Repository
             }
         }
 
-        public Dictionary<byte, Dictionary<string,double>> FillPatterns(out int size)
+        public Dictionary<byte, Dictionary<string, double>> FillPatterns(out int size)
         {
             var query = new TableQuery<Store.Pattern>().Where(TableQuery.GenerateFilterCondition("PartitionKey",
                     QueryComparisons.Equal, "pattern"));
             //Getting max value of the patterns
             var listPatterns = _table.ExecuteQuery(query).ToList();
             size = listPatterns.Select(x => x.MaxHistorySize).Max();
-            
+
             var result = new Dictionary<byte, Dictionary<string, double>>();
             for (byte i = 1; i <= size; i++)
             {
@@ -63,12 +62,23 @@ namespace Takenet.ScoreSystem.Base.Repository
             var insertPattern = TableOperation.InsertOrReplace(new Store.Pattern(resultPattern));
             var tableResult = await _table.ExecuteAsync(insertPattern);
         }
+
         public async Task IncludeOrChangeTransaction(Transaction transaction)
         {
-            var operation = TableOperation.InsertOrReplace((Store.Transaction)transaction);
+            var transactionAzure = GetTransaction(transaction.ClientId, transaction.TransactionId);
+
+            if (transactionAzure == null)
+            {
+                transactionAzure = (Store.Transaction)transaction;
+            }
+            else
+            {
+                transactionAzure.Signature = transaction.Signature;
+            }
+
+            var operation = TableOperation.InsertOrReplace(transactionAzure);
             var tableresult = await _table.ExecuteAsync(operation);
         }
-
 
         public IEnumerable<Transaction> GetClientTransactions(string clientId, DateTime maxvalue, int maxTransactions)
         {
@@ -82,9 +92,12 @@ namespace Takenet.ScoreSystem.Base.Repository
             return _table.ExecuteQuery(query).Select(t => (Transaction)t);
         }
 
-
-
         public Transaction GetTransactionById(string clientId, string transactionId)
+        {
+            return GetTransaction(clientId, transactionId);
+        }
+
+        private Store.Transaction GetTransaction(string clientId, string transactionId)
         {
             TableQuery<Store.Transaction> query =
                 new TableQuery<Store.Transaction>().Where(
@@ -92,10 +105,11 @@ namespace Takenet.ScoreSystem.Base.Repository
                         TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, clientId),
                         TableOperators.And,
                         TableQuery.GenerateFilterCondition("TransactionId", QueryComparisons.Equal, transactionId)));
+
             return _table.ExecuteQuery(query).FirstOrDefault();
         }
     }
 
 
-       
+
 }
