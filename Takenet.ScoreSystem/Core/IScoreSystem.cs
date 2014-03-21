@@ -26,8 +26,9 @@ namespace Takenet.ScoreSystem.Core
         /// <param name="value">The value.</param>
         /// <param name="minHistorySize">Min value for the history size</param>
         /// <param name="maxHistorySize">Max value for the history size</param>
+        /// <param name="description">Optional description for this pattern</param>
         /// <returns></returns>
-        Task<Pattern> IncludeOrChangePattern(string pattern, double value, byte minHistorySize, byte maxHistorySize);
+        Task<Pattern> IncludeOrChangePattern(string pattern, double value, byte minHistorySize, byte maxHistorySize, string description = null);
 
         /// <summary>
         /// Removes the pattern.

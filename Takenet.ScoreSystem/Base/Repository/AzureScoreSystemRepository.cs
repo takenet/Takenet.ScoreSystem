@@ -77,6 +77,7 @@ namespace Takenet.ScoreSystem.Base.Repository
                 patternAzure.MaxHistorySize = resultPattern.MaxHistorySize;
                 patternAzure.MinHistorySize = resultPattern.MinHistorySize;
                 patternAzure.Value = resultPattern.Value;
+                patternAzure.Description = resultPattern.Description;
             }
 
             var operation = TableOperation.InsertOrReplace(patternAzure);

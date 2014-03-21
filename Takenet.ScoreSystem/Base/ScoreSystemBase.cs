@@ -46,9 +46,9 @@ namespace Takenet.ScoreSystem.Base
             return resultPattern;
         }
 
-        public async Task<Pattern> IncludeOrChangePattern(string pattern, double value, byte minHistorySize, byte maxHistorySize)
+        public async Task<Pattern> IncludeOrChangePattern(string pattern, double value, byte minHistorySize, byte maxHistorySize, string description = null)
         {
-            var resultPattern = new Pattern(pattern, value, minHistorySize,maxHistorySize);
+            var resultPattern = new Pattern(pattern, value, minHistorySize,maxHistorySize, description);
             await _scoreSystemRepository.IncludeOrChangePattern(resultPattern);
             _checkPatterns = null;
             return resultPattern;

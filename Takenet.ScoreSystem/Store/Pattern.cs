@@ -20,12 +20,14 @@ namespace Takenet.ScoreSystem.Store
             Value = pattern.Value;
             MaxHistorySize = pattern.MaxHistorySize;
             MinHistorySize = pattern.MinHistorySize;
+            Description = pattern.Description;
         }
 
         public string Signature { get; set; }
         public double Value { get; set; }
         public int MinHistorySize { get; set; }
         public int MaxHistorySize { get; set; }
+        public string Description { get; set; }
 
         public static implicit operator Core.Pattern(Pattern pattern)
         {
