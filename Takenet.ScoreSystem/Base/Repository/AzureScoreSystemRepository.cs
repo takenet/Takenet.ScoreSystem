@@ -11,6 +11,8 @@ namespace Takenet.ScoreSystem.Base.Repository
 {
     public class AzureScoreSystemRepository : IScoreSystemRepository
     {
+        private const string PATTERN_PARTITIONKEY = "pattern";
+
         private readonly CloudTable _table;
 
         public AzureScoreSystemRepository(string azureConnectionString, string colletion)
@@ -23,25 +25,24 @@ namespace Takenet.ScoreSystem.Base.Repository
 
         public async Task RemovePattern(string pattern)
         {
-            var retrievePattern = TableOperation.Retrieve<Store.Pattern>("pattern", pattern);
-            var tableResult = await _table.ExecuteAsync(retrievePattern);
-            if (tableResult.Result != null)
+            var retrievePattern = GetPattern(pattern);
+            if (retrievePattern != null)
             {
-                var operation = TableOperation.Delete((Store.Pattern)tableResult.Result);
+                var operation = TableOperation.Delete((Store.Pattern)retrievePattern);
                 var result = await _table.ExecuteAsync(operation);
             }
         }
 
-        public Dictionary<byte, Dictionary<string, double>> FillPatterns(out int size)
+        public Dictionary<byte, Dictionary<string, double>> FillPatterns(out int maxTransactionHistory)
         {
             var query = new TableQuery<Store.Pattern>().Where(TableQuery.GenerateFilterCondition("PartitionKey",
-                    QueryComparisons.Equal, "pattern"));
+                    QueryComparisons.Equal, PATTERN_PARTITIONKEY));
             //Getting max value of the patterns
             var listPatterns = _table.ExecuteQuery(query).ToList();
-            size = listPatterns.Select(x => x.MaxHistorySize).Max();
+            maxTransactionHistory = listPatterns.Select(x => x.MaxHistorySize).Max();
 
             var result = new Dictionary<byte, Dictionary<string, double>>();
-            for (byte i = 1; i <= size; i++)
+            for (byte i = 1; i <= maxTransactionHistory; i++)
             {
                 result[i] =
                     listPatterns.Where(x => x.MaxHistorySize >= i && x.MinHistorySize <= i)
@@ -50,17 +51,36 @@ namespace Takenet.ScoreSystem.Base.Repository
             return result;
         }
 
-        public async Task<Pattern> GetCurrentPattern(string pattern)
+        public Task<Pattern> GetCurrentPattern(string pattern)
         {
-            var retrievePattern = TableOperation.Retrieve<Store.Pattern>("pattern", pattern);
-            var tableResult = await _table.ExecuteAsync(retrievePattern);
-            return tableResult.Result as Pattern;
+            var retrievePattern = GetPattern(pattern);
+            Pattern result = null; 
+
+            if (retrievePattern != null)
+            {
+                result = retrievePattern;
+            }
+
+            return Task.FromResult(result);
         }
 
         public async Task IncludeOrChangePattern(Pattern resultPattern)
         {
-            var insertPattern = TableOperation.InsertOrReplace(new Store.Pattern(resultPattern));
-            var tableResult = await _table.ExecuteAsync(insertPattern);
+            var patternAzure = GetPattern(resultPattern.Signature);
+
+            if (patternAzure == null)
+            {
+                patternAzure = (Store.Pattern)resultPattern;
+            }
+            else
+            {
+                patternAzure.MaxHistorySize = resultPattern.MaxHistorySize;
+                patternAzure.MinHistorySize = resultPattern.MinHistorySize;
+                patternAzure.Value = resultPattern.Value;
+            }
+
+            var operation = TableOperation.InsertOrReplace(patternAzure);
+            var tableresult = await _table.ExecuteAsync(operation);
         }
 
         public async Task IncludeOrChangeTransaction(Transaction transaction)
@@ -108,6 +128,18 @@ namespace Takenet.ScoreSystem.Base.Repository
 
             return _table.ExecuteQuery(query).FirstOrDefault();
         }
+
+        private Store.Pattern GetPattern(string signature)
+        {
+            var query = new TableQuery<Store.Pattern>().Where(
+                                TableQuery.CombineFilters(
+                                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, PATTERN_PARTITIONKEY),
+                                    TableOperators.And,
+                                    TableQuery.GenerateFilterCondition("Signature", QueryComparisons.Equal, signature)));
+
+            return _table.ExecuteQuery(query).FirstOrDefault();
+        }
+
     }
 
 
