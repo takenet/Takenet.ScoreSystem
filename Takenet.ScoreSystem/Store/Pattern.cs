@@ -9,24 +9,23 @@ namespace Takenet.ScoreSystem.Store
 {
     public class Pattern : TableEntity
     {
-
         public Pattern()
         {
             
         }
 
-        public Pattern(Core.Pattern pattern) : base("pattern", pattern.Signature)
+        public Pattern(Core.Pattern pattern) : base("pattern", Guid.NewGuid().ToString())
         {
+            Signature = pattern.Signature;
             Value = pattern.Value;
             MaxHistorySize = pattern.MaxHistorySize;
             MinHistorySize = pattern.MinHistorySize;
         }
 
-        public string Signature { get { return this.RowKey; }  }
+        public string Signature { get; set; }
         public double Value { get; set; }
         public int MinHistorySize { get; set; }
         public int MaxHistorySize { get; set; }
-
 
         public static implicit operator Core.Pattern(Pattern pattern)
         {
